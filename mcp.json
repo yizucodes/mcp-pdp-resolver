@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "pdp-resolver": {
+      "command": "python3",
+      "args": ["mcp_server.py"],
+      "env": {
+        "FIRECRAWL_API_KEY": "YOUR_FIRECRAWL_API_KEY",
+        "OPENAI_API_KEY": "YOUR_OPENAI_API_KEY"
+      }
+    }
+  }
+}
