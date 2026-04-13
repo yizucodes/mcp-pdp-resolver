@@ -1,0 +1,40 @@
+{
+  "upcoming_events": [
+    {
+      "name": "Tech Conference",
+      "location": "New York, NY",
+      "date": "2026-06-10",
+      "dress_code": "business casual",
+      "duration_days": 2,
+      "climate_hint": "mild"
+    },
+    {
+      "name": "Team Off-site",
+      "location": "Austin, TX",
+      "date": "2026-07-15",
+      "dress_code": "casual",
+      "duration_days": 3,
+      "climate_hint": "hot_humid"
+    }
+  ],
+  "products": [
+    {
+      "item": "Slim Fit Oxford Shirt",
+      "brand": "Uniqlo",
+      "source": "Uniqlo",
+      "url": "",
+      "department": "men's"
+    },
+    {
+      "item": "Stretch Chino Pants",
+      "brand": "Banana Republic",
+      "source": "Banana Republic",
+      "url": "",
+      "department": "men's"
+    }
+  ],
+  "fallback_recommendation": {
+    "resolved": [],
+    "summary": "No resolver result yet — add your FIRECRAWL_API_KEY to .env and run again."
+  }
+}

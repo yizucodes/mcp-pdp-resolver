@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MCP PDP Resolver</title>
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --glass: rgba(255,255,255,0.08);
+      --glass-border: rgba(255,255,255,0.12);
+      --text: #fff;
+      --text-2: rgba(255,255,255,0.7);
+      --text-3: rgba(255,255,255,0.5);
+      --text-4: rgba(255,255,255,0.35);
+      --accent: #667eea;
+      --accent-2: #764ba2;
+      --purple: #c4b5fd;
+      --green: #4ade80;
+      --amber: #fbbf24;
+      --red: #f87171;
+      --rose: #fda4af;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Satoshi', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      padding: 1.5rem;
+    }
+
+    .phone:focus-within { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+    .phone {
+      width: 375px;
+      max-width: 100%;
+      min-height: 680px;
+      max-height: 88vh;
+      background: var(--glass);
+      border-radius: 48px;
+      padding: 48px 24px 32px;
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .time {
+      text-align: center;
+      color: var(--text);
+      font-size: 3.5rem;
+      font-weight: 300;
+      letter-spacing: -2px;
+      line-height: 1;
+      margin-bottom: 4px;
+      flex-shrink: 0;
+    }
+
+    .date {
+      text-align: center;
+      color: var(--text-3);
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+      flex-shrink: 0;
+    }
+
+    .phone-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      position: relative;
+    }
+    .phone-body::-webkit-scrollbar { display: none; }
+
+    .screen {
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .screen.exit {
+      opacity: 0;
+      transform: scale(0.97);
+      pointer-events: none;
+    }
+
+    /* ── Screen 1: Context ── */
+
+    .oracle-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .oracle-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .oracle-name {
+      color: var(--text);
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    .oracle-sub {
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 0.68rem;
+      font-weight: 500;
+    }
+
+    .section { margin-bottom: 18px; }
+
+    .section-label {
+      color: var(--text-4);
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 8px;
+    }
+
+    .event-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      margin-bottom: 6px;
+    }
+
+    .event-name {
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .event-meta {
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 0.68rem;
+      margin-top: 2px;
+    }
+
+    .event-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .event-badge.ok {
+      background: rgba(74,222,128,0.15);
+      color: var(--green);
+    }
+
+    .event-badge.warn {
+      background: rgba(251,191,36,0.15);
+      color: var(--amber);
+    }
+
+    .snap-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .snap-card {
+      flex: 1;
+      padding: 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      text-align: center;
+    }
+
+    .snap-num {
+      color: var(--text);
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .snap-lbl {
+      color: var(--text-3);
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .snap-cats {
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 0.68rem;
+      line-height: 1.4;
+    }
+
+    .util-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .util-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .util-fill {
+      height: 100%;
+      border-radius: 3px;
+      width: 0%;
+      transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .util-val {
+      font-size: 1.3rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .util-max {
+      font-size: 0.68rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .gap-warn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      background: rgba(251,191,36,0.1);
+      border: 1px solid rgba(251,191,36,0.25);
+      border-radius: 12px;
+      margin-bottom: 18px;
+    }
+
+    .gap-warn-icon { font-size: 1rem; flex-shrink: 0; }
+
+    .gap-warn-text {
+      color: var(--amber);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .cta-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: #5B5BD6;
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .cta-btn:hover { background: #4B4BC6; }
+    .cta-btn:active { transform: scale(0.97); }
+    .cta-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* ── Screen 2: Loading + Recommendation ── */
+
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 320px;
+      transition: opacity 0.4s ease;
+    }
+
+    .loading-orb {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      animation: orbPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes orbPulse {
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.12); opacity: 1; }
+    }
+
+    .status-text {
+      color: var(--text-2);
+      font-size: 0.88rem;
+      font-weight: 500;
+      text-align: center;
+      transition: opacity 0.25s ease;
+    }
+
+    .rec-card {
+      display: none;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: opacity 0.5s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .rec-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .rec-inner {
+      background: rgba(255,255,255,0.10);
+      border-radius: 20px;
+      padding: 16px;
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .notif-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .notif-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .notif-label {
+      color: var(--text-3);
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .notif-ts {
+      color: var(--text-4);
+      font-size: 0.7rem;
+      margin-left: auto;
+    }
+
+    .gap-callout {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      background: rgba(251,113,133,0.12);
+      border: 1px solid rgba(251,113,133,0.3);
+      border-radius: 12px;
+    }
+
+    .gap-callout-label {
+      color: var(--rose);
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .gap-callout-text {
+      color: #ffe4e6;
+      font-size: 0.82rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    .rec-title {
+      color: var(--text);
+      font-size: 0.92rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .event-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .ev-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      background: rgba(196,181,253,0.15);
+      border: 1px solid rgba(196,181,253,0.25);
+      border-radius: 20px;
+      color: var(--purple);
+      font-size: 0.68rem;
+      font-weight: 500;
+    }
+
+    .wear-line {
+      color: var(--text-3);
+      font-size: 0.78rem;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .wear-line strong { color: var(--text-2); font-weight: 600; }
+
+    .product-name {
+      color: var(--text-2);
+      font-size: 0.85rem;
+      margin-bottom: 2px;
+      line-height: 1.4;
+    }
+
+    .product-name a {
+      color: var(--purple);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      font-weight: 600;
+    }
+    .product-name a:hover { color: #ddd6fe; }
+
+    .product-source {
+      color: var(--text-4);
+      font-size: 0.7rem;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .price-row {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .price-card {
+      flex: 1;
+      padding: 10px 12px;
+      background: rgba(102,126,234,0.2);
+      border-radius: 12px;
+      border: 1px solid rgba(102,126,234,0.3);
+    }
+
+    .price-lbl {
+      color: var(--text-3);
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 2px;
+    }
+
+    .price-val {
+      color: var(--purple);
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .conf-block {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .conf-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .conf-lbl {
+      color: var(--text-3);
+      font-size: 0.62rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .conf-score {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .conf-track {
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .conf-fill {
+      height: 100%;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 1s ease;
+    }
+
+    .reasoning {
+      margin-top: 10px;
+      color: var(--text-3);
+      font-size: 0.78rem;
+      line-height: 1.55;
+      font-style: italic;
+    }
+
+    .why-section {
+      margin-top: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+
+    .why-section summary {
+      padding: 10px 12px;
+      color: var(--text-3);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .why-section summary::-webkit-details-marker { display: none; }
+
+    .why-section summary::before {
+      content: '▸';
+      font-size: 0.7rem;
+      transition: transform 0.2s ease;
+      display: inline-block;
+    }
+
+    .why-section[open] summary::before {
+      transform: rotate(90deg);
+    }
+
+    .why-content {
+      padding: 0 12px 12px;
+      color: var(--text-4);
+      font-size: 0.75rem;
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .btn-buy {
+      flex: 1;
+      padding: 12px;
+      background: #5B5BD6;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-buy:hover { background: #4B4BC6; }
+    .btn-buy:active { opacity: 0.85; }
+
+    .btn-dismiss {
+      padding: 12px 18px;
+      background: rgba(255,255,255,0.08);
+      color: var(--text-3);
+      border: none;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-dismiss:active { background: rgba(255,255,255,0.14); }
+
+    /* ── Resolved product list ── */
+
+    .summary-line {
+      color: var(--text-2);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: rgba(102,126,234,0.12);
+      border-radius: 10px;
+      border: 1px solid rgba(102,126,234,0.22);
+    }
+
+    .resolved-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .resolved-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .resolved-badge {
+      flex-shrink: 0;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .pdp-badge {
+      background: rgba(74,222,128,0.15);
+      color: var(--green);
+      border: 1px solid rgba(74,222,128,0.25);
+    }
+
+    .plp-badge {
+      background: rgba(251,191,36,0.12);
+      color: var(--amber);
+      border: 1px solid rgba(251,191,36,0.25);
+    }
+
+    .resolved-info { flex: 1; min-width: 0; }
+
+    .resolved-name {
+      color: var(--text-2);
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.4;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .resolved-name a {
+      color: var(--purple);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .resolved-name a:hover { color: #ddd6fe; }
+
+    .resolved-meta {
+      color: var(--text-4);
+      font-size: 0.7rem;
+      margin-top: 2px;
+    }
+
+    /* ── Mobile fullscreen ── */
+
+    @media (max-width: 420px) {
+      body { padding: 0; align-items: stretch; }
+      .phone {
+        width: 100%;
+        min-height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
+        box-shadow: none;
+        padding: 52px 20px 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="phone" role="main" tabindex="0" aria-label="MCP PDP Resolver application">
+    <div class="time" id="clock">--:--</div>
+    <div class="date" id="dateDisplay">Loading…</div>
+    <div class="phone-body">
+      <div id="screen1" class="screen">
+        <div class="loading-state">
+          <div class="loading-orb">🔮</div>
+          <div class="status-text">Loading…</div>
+        </div>
+      </div>
+      <div id="screen2" class="screen" style="display:none"></div>
+    </div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    var ctx = null;
+
+    /* ── Helpers ── */
+
+    function esc(s) {
+      if (s == null) return '';
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function usd(n) {
+      var r = Math.round(typeof n === 'number' ? n : parseFloat(n) || 0);
+      return '$' + r.toLocaleString('en-US');
+    }
+
+    function fmtDate(d) {
+      return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function delay(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+    function safeUrl(raw) {
+      if (!raw || typeof raw !== 'string') return null;
+      try {
+        var u = new URL(raw.trim());
+        return (u.protocol === 'http:' || u.protocol === 'https:') ? u.href : null;
+      } catch (e) { return null; }
+    }
+
+    function isResolved(product) {
+      return !!(product && product.canonical_url && product.in_stock !== false);
+    }
+
+    function updateClock() {
+      var now = new Date();
+      document.getElementById('clock').textContent =
+        now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+      document.getElementById('dateDisplay').textContent =
+        now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+
+    /* ── Fetch context ── */
+
+    function fetchContext() {
+      var urls = ['/api/context', '../local_files/context.json', './local_files/context.json'];
+      var i = 0;
+      function tryNext() {
+        if (i >= urls.length) return Promise.reject(new Error('Could not load context'));
+        var url = urls[i++];
+        return fetch(url, { cache: 'no-store' }).then(function (res) {
+          if (res.ok) return res.json();
+          return tryNext();
+        }).catch(function () { return tryNext(); });
+      }
+      return tryNext();
+    }
+
+    /* ── Screen 1: Context ── */
+
+    function renderScreen1(data) {
+      var events = data.upcoming_events || [];
+      var products = data.products || [];
+      var unresolved = 0;
+
+      var eventsHtml = '';
+      for (var i = 0; i < events.length; i++) {
+        var evt = events[i];
+        var ok = true;
+        eventsHtml +=
+          '<div class="event-row">'
+          + '<div>'
+          + '<div class="event-name">' + esc(evt.name) + '</div>'
+          + '<div class="event-meta">' + esc(evt.location) + ' · ' + fmtDate(evt.date) + ' · ' + esc(evt.dress_code) + '</div>'
+          + '</div>'
+          + '<div class="event-badge ' + (ok ? 'ok' : 'warn') + '">' + (ok ? '✓' : '⚠') + '</div>'
+          + '</div>';
+      }
+
+      var resolvedCount = 0;
+      for (var j = 0; j < products.length; j++) {
+        if (isResolved(products[j])) resolvedCount++;
+      }
+
+      document.getElementById('screen1').innerHTML =
+        '<div class="oracle-bar">'
+        + '<div class="oracle-icon">🔮</div>'
+        + '<div><div class="oracle-name">MCP PDP Resolver</div><div class="oracle-sub">Product Data Resolver</div></div>'
+        + '</div>'
+
+        + '<div class="section"><div class="section-label">Upcoming Events</div>' + eventsHtml + '</div>'
+
+        + '<div class="section"><div class="section-label">Products</div>'
+        + '<div class="snap-row">'
+        + '<div class="snap-card"><div class="snap-num">' + products.length + '</div><div class="snap-lbl">Total</div></div>'
+        + '<div class="snap-card"><div class="snap-num">' + resolvedCount + '</div><div class="snap-lbl">Resolved</div></div>'
+        + '</div>'
+        + (products.length > 0
+          ? '<div class="snap-cats">'
+            + products.slice(0, 3).map(function (p) {
+                var label = [p.brand, p.name || p.item].filter(Boolean).join(' ') || p.canonical_url || '—';
+                var price = p.price_usd ? ' · $' + Number(p.price_usd).toFixed(2) : '';
+                var stock = p.in_stock === false ? ' · out of stock' : p.in_stock ? ' · in stock' : '';
+                return esc(label + price + stock);
+              }).join('<br>')
+            + '</div>'
+          : '')
+        + '</div>'
+
+        + (unresolved > 0
+          ? '<div class="gap-warn"><span class="gap-warn-icon">⚠</span><span class="gap-warn-text">'
+            + unresolved + ' product' + (unresolved > 1 ? 's' : '') + ' could not be resolved</span></div>'
+          : '')
+
+        + '<button class="cta-btn" id="ctaBtn" role="button" aria-label="Resolve products using the PDP pipeline">Resolve Products</button>';
+
+      document.getElementById('ctaBtn').addEventListener('click', function () { runResolver(); });
+    }
+
+    /* ── Screen 2: Run + Recommend ── */
+
+    function runResolver() {
+      var btn = document.getElementById('ctaBtn');
+      if (!btn || btn.disabled) return;
+      btn.disabled = true;
+      btn.textContent = 'Running…';
+
+      var phoneEl = document.querySelector('.phone');
+      var lockH = Math.round(phoneEl.getBoundingClientRect().height);
+      phoneEl.style.height = lockH + 'px';
+      phoneEl.style.minHeight = lockH + 'px';
+      phoneEl.style.maxHeight = lockH + 'px';
+
+      var s1 = document.getElementById('screen1');
+      var s2 = document.getElementById('screen2');
+
+      s1.classList.add('exit');
+
+      delay(400).then(function () {
+        s1.style.display = 'none';
+        s2.style.display = 'block';
+        s2.innerHTML =
+          '<div id="loadingState" class="loading-state">'
+          + '<div class="loading-orb">🔮</div>'
+          + '<div class="status-text" id="statusText" aria-live="polite">Resolving products…</div>'
+          + '</div>'
+          + '<div id="recCard" class="rec-card"></div>';
+
+        return fetchRecommendation().then(function (rec) {
+          var statusText = document.getElementById('statusText');
+          statusText.style.opacity = '0';
+          return delay(250)
+            .then(function () {
+              statusText.textContent = 'Resolution complete.';
+              statusText.style.opacity = '1';
+              return delay(700);
+            })
+            .then(function () {
+              var loading = document.getElementById('loadingState');
+              loading.style.opacity = '0';
+              return delay(400);
+            })
+            .then(function () {
+              document.getElementById('loadingState').style.display = 'none';
+              showRec(rec);
+            });
+        });
+      });
+    }
+
+    /**
+     * Start the job with POST /api/run, then poll GET /api/jobs/:id every 1.5 s
+     * until status is "done" or "error". Updates the status text from job.phase.
+     * Falls back to ctx.fallback_recommendation on any network/agent error.
+     */
+    function fetchRecommendation() {
+      return new Promise(function (resolve) {
+        var lastPhase = '';
+
+        function setStatus(text) {
+          if (text === lastPhase) return;
+          lastPhase = text;
+          var el = document.getElementById('statusText');
+          if (!el) return;
+          el.style.opacity = '0';
+          setTimeout(function () {
+            if (document.getElementById('statusText')) {
+              document.getElementById('statusText').textContent = text;
+              document.getElementById('statusText').style.opacity = '1';
+            }
+          }, 250);
+        }
+
+        function poll(jobId) {
+          fetch('/api/jobs/' + jobId, { cache: 'no-store' })
+            .then(function (res) {
+              if (!res.ok) throw new Error('poll HTTP ' + res.status);
+              return res.json();
+            })
+            .then(function (job) {
+              if (job.phase) setStatus(job.phase);
+
+              if (job.status === 'done') {
+                resolve(job.result || ctx.fallback_recommendation);
+              } else if (job.status === 'error') {
+                resolve(ctx.fallback_recommendation);
+              } else {
+                setTimeout(function () { poll(jobId); }, 1500);
+              }
+            })
+            .catch(function () {
+              resolve(ctx.fallback_recommendation);
+            });
+        }
+
+        fetch('/api/run', { method: 'POST' })
+          .then(function (res) {
+            if (!res.ok) throw new Error('start HTTP ' + res.status);
+            return res.json();
+          })
+          .then(function (data) {
+            if (data && data.error) throw new Error(data.error);
+            if (!data || !data.job_id) throw new Error('No job_id returned');
+            setStatus(data.phase || 'Running…');
+            poll(data.job_id);
+          })
+          .catch(function () {
+            resolve(ctx.fallback_recommendation);
+          });
+      });
+    }
+
+    /* ── Resolution result card ── */
+
+    function showRec(rec) {
+      var resolved = rec.resolved || [];
+      var summary = rec.summary || 'Resolution complete.';
+
+      var itemsHtml = '';
+      for (var i = 0; i < resolved.length; i++) {
+        var p = resolved[i];
+        var url = safeUrl(p.canonical_url);
+        var isPdp = p.url_type === 'pdp';
+        var productName = p.product_name || [p.brand, p.item].filter(Boolean).join(' ') || '—';
+        var nameHtml = url
+          ? '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(productName) + '</a>'
+          : '<strong>' + esc(productName) + '</strong>';
+
+        var meta = [];
+        if (p.price_usd != null) meta.push('$' + Number(p.price_usd).toFixed(2));
+        if (p.in_stock === true) meta.push('In Stock');
+        else if (p.in_stock === false) meta.push('Out of Stock');
+        if (p.source) meta.push('on ' + p.source);
+
+        itemsHtml +=
+          '<div class="resolved-item">'
+          + '<div class="resolved-badge ' + (isPdp ? 'pdp-badge' : 'plp-badge') + '">'
+          + (isPdp ? 'PDP ✓' : 'PLP')
+          + '</div>'
+          + '<div class="resolved-info">'
+          + '<div class="resolved-name">' + nameHtml + '</div>'
+          + (meta.length ? '<div class="resolved-meta">' + esc(meta.join(' · ')) + '</div>' : '')
+          + '</div>'
+          + '</div>';
+      }
+
+      if (!itemsHtml) {
+        itemsHtml =
+          '<div style="color:var(--text-4);font-size:0.8rem;padding:8px 0">'
+          + 'No products resolved.</div>';
+      }
+
+      var card = document.getElementById('recCard');
+      card.innerHTML =
+        '<div class="rec-inner">'
+        + '<div class="notif-row">'
+        + '<div class="notif-icon">🔮</div>'
+        + '<div class="notif-label">MCP PDP Resolver</div>'
+        + '<div class="notif-ts">now</div>'
+        + '</div>'
+        + '<div class="summary-line">' + esc(summary) + '</div>'
+        + '<div class="resolved-list">' + itemsHtml + '</div>'
+        + '<div class="actions">'
+        + '<button class="btn-dismiss" id="retryBtn" style="flex:1" role="button" aria-label="Retry product resolution">Try Again</button>'
+        + '<button class="btn-dismiss" id="dismissBtn" style="flex:1" role="button" aria-label="Dismiss results">Done</button>'
+        + '</div>'
+        + '</div>';
+
+      card.style.display = 'block';
+
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          card.classList.add('visible');
+        });
+      });
+
+      document.getElementById('retryBtn').addEventListener('click', function () {
+        card.classList.remove('visible');
+        setTimeout(function () {
+          card.style.display = 'none';
+          // Reset to screen 1 and re-enable the resolve button.
+          var s1 = document.getElementById('screen1');
+          var s2 = document.getElementById('screen2');
+          s2.style.display = 'none';
+          s1.style.display = 'block';
+          s1.classList.remove('exit');
+          var phoneEl = document.querySelector('.phone');
+          phoneEl.style.height = '';
+          phoneEl.style.minHeight = '';
+          phoneEl.style.maxHeight = '';
+          renderScreen1(ctx);
+        }, 600);
+      });
+
+      document.getElementById('dismissBtn').addEventListener('click', function () {
+        card.classList.remove('visible');
+        setTimeout(function () { card.style.display = 'none'; }, 600);
+      });
+    }
+
+    /* ── Init ── */
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    fetchContext().then(function (data) {
+      ctx = data;
+      renderScreen1(data);
+    }).catch(function (err) {
+      document.getElementById('screen1').innerHTML =
+        '<div style="text-align:center;padding:60px 0">'
+        + '<div style="font-size:2rem;margin-bottom:12px">🔮</div>'
+        + '<div style="color:var(--text-3);font-size:0.85rem">Could not load data.</div>'
+        + '<div style="color:var(--text-4);font-size:0.72rem;margin-top:6px">' + esc(err.message) + '</div>'
+        + '</div>';
+    });
+  })();
+  </script>
+</body>
+</html>
