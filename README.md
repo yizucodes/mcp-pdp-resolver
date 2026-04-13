@@ -40,6 +40,17 @@ Two entrypoints converge on the same core pipeline in `resolver.py`:
 └──────────────────────────────────────────────────────────────────┘
 ```
 
+## mcp-use in this repo
+
+**Path A only** — [`mcp-use`](https://pypi.org/project/mcp-use/) `>=1.7`.
+
+| What | Where |
+|------|-------|
+| `MCPAgent` + `MCPClient` driving `mcp.json` | `demo_agent.py` |
+| `StripNullToolArgumentsMiddleware` on the client (strips LLM-emitted `null` args before `tools/call`) | `resolver.py` |
+
+FastMCP keeps the server as a small stdio tool host for standard MCP clients; **mcp-use** is intentionally used on the agent/client side only.
+
 ---
 
 ## Quickstart — Path A: MCP + mcp-use (primary demo)
